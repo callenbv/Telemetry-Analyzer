@@ -11,13 +11,25 @@ import tkinter as tk
 import tab_manager
 import database
 
+# Try to import tkinterdnd2 for drag-and-drop support
+try:
+    from tkinterdnd2 import TkinterDnD
+    HAS_DND = True
+except ImportError:
+    HAS_DND = False
+
 window = None # Global variable to hold the main window instance
 tabManager = None # Create an instance of the tab manager
 
 # Initialize the window with title and other static settings
 def SetupApplication():
     global window
-    window = tk.Tk()
+    # Use TkinterDnD.Tk() if available for drag-and-drop support
+    if HAS_DND:
+        window = TkinterDnD.Tk()
+    else:
+        window = tk.Tk()
+    
     window.geometry(f"{settings.WindowSize[0]}x{settings.WindowSize[1]}")
     window.title(settings.Title)
 
