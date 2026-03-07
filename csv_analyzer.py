@@ -47,23 +47,15 @@ class TelemetryAnalyzer:
 
     # Process multiple CSV files at once
     def ProcessMultipleFiles(self, file_paths):
-        print(f"DEBUG ProcessMultipleFiles: Processing {len(file_paths)} files")
-        print(f"DEBUG ProcessMultipleFiles: Files: {file_paths}")
-        
         successful = 0
         failed = 0
         
         for file_path in file_paths:
-            print(f"DEBUG ProcessMultipleFiles: Processing {file_path}")
             if file_path.lower().endswith('.csv'):
                 if self.LoadAndAddToDatabase(file_path):
-                    print(f"DEBUG ProcessMultipleFiles: Successfully added {file_path}")
                     successful += 1
                 else:
-                    print(f"DEBUG ProcessMultipleFiles: Failed to add {file_path}")
                     failed += 1
-        
-        print(f"DEBUG ProcessMultipleFiles: Results - Successful: {successful}, Failed: {failed}")
         
         if successful > 0:
             self.status_var.set(f"Processed {successful} file(s) successfully" + (f", {failed} failed" if failed > 0 else ""))

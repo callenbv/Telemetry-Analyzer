@@ -4,7 +4,7 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 
-DB_PATH = "TelemetryData/playtest_data.db"
+DB_PATH = "SQLData/playtest_data.db"
 
 # Add telemetry data from the CSVData list to the SQLite database, with optional file path for reference
 # The function detects event names and timestamps based on common key candidates, and stores the raw row data 
@@ -80,6 +80,7 @@ def AddToDataBase(
         )
         run_id = cur.lastrowid
 
+        # Helper function to find the best matching key for event name, time, and value with case-insensitive matching and fallbacks
         def find_key_ci(row_dict, candidates):
             lower_map = {k.lower(): k for k in row_dict.keys()}
             for c in candidates:
@@ -88,6 +89,7 @@ def AddToDataBase(
                     return k
             return None
 
+        # Helper functions to parse time and numeric values with flexible formats
         def parse_time_ms(v):
             if v is None:
                 return None

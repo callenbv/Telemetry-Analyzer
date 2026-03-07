@@ -1,11 +1,12 @@
 # telemetry_tab.py
 import json
+import os
 
 import csv_analyzer
 import Tabs.tab as tab
 import theme
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import database
 import pandas as pd
 
@@ -106,6 +107,15 @@ class TelemetryTab(tab.Tab):
         )
         analyzeButton.pack(side="left", padx=5)
 
+        deleteButton = tk.Button(
+            buttonFrame,
+            text="Delete Data",
+            bg="#8B0000",  # Dark red
+            fg=theme.ForegroundColor,
+            command=self.DeleteDatabase
+        )
+        deleteButton.pack(side="left", padx=5)
+
         # Controls row (mode / event / run / bucket / refresh)
         controls = tk.Frame(self.content, bg=self.content["bg"])
         controls.pack(fill="x", padx=10, pady=10)
@@ -174,17 +184,60 @@ class TelemetryTab(tab.Tab):
         self.RefreshSelectorsAndPlots()
 
     # ----------------------------
+    # Database Management
+    # ----------------------------
+    def DeleteDatabase(self):
+        """Delete the entire database after confirmation"""
+        # Show confirmation dialog
+        response = messagebox.askyesno(
+            "Confirm Delete",
+            "Are you sure you want to delete ALL telemetry data?\n\n"
+            "This will permanently delete the database file and cannot be undone!",
+            icon='warning'
+        )
+        
+        if not response:
+            return  # User clicked No or closed dialog
+        
+        # Get database path
+        db_path = database.DB_PATH
+        
+        try:
+            # Check if database exists
+            if os.path.exists(db_path):
+                # Close any existing connections (best effort)
+                # Delete the file
+                os.remove(db_path)
+                self.status_var.set("Database deleted successfully")
+                messagebox.showinfo("Success", "All telemetry data has been deleted.")
+            else:
+                self.status_var.set("No database found")
+                messagebox.showinfo("Info", "Database file does not exist.")
+            
+            # Clear the UI
+            self._clear_results()
+            self._message("Database deleted. Upload new data to begin.")
+            
+            # Reset selectors
+            if self.eventCombo:
+                self.eventCombo["values"] = []
+                self.selected_event.set("")
+            if self.runCombo:
+                self.runCombo["values"] = []
+                self.selected_run.set("")
+                
+        except Exception as e:
+            error_msg = f"Failed to delete database: {e}"
+            self.status_var.set(error_msg)
+            messagebox.showerror("Error", error_msg)
+
+    # ----------------------------
     # Drag and Drop Handler
     # ----------------------------
     def on_drop(self, event):
         """Handle dropped files"""
-        # Debug: print raw data
-        print(f"DEBUG: Raw drop data: {repr(event.data)}")
-        
         # Parse the dropped file paths
         files = self.parse_drop_files(event.data)
-        
-        print(f"DEBUG: Parsed files: {files}")
         
         if not files:
             self.status_var.set("No valid files dropped")
@@ -192,8 +245,6 @@ class TelemetryTab(tab.Tab):
         
         # Filter for CSV files only
         csv_files = [f for f in files if f.lower().endswith('.csv')]
-        
-        print(f"DEBUG: CSV files: {csv_files}")
         
         if not csv_files:
             self.status_var.set("No CSV files found in drop")
@@ -205,12 +256,11 @@ class TelemetryTab(tab.Tab):
         
         successful, failed = self.analyzer.ProcessMultipleFiles(csv_files)
         
-        print(f"DEBUG: Successful: {successful}, Failed: {failed}")
-        
         # Refresh the UI after adding files
         if successful > 0:
             self.RefreshSelectorsAndPlots()
     
+    # Helper to parse file paths from drag-and-drop data, supporting multiple files and various formats
     def parse_drop_files(self, data):
         """Parse file paths from drag-and-drop data - supports multiple files"""
         import re
